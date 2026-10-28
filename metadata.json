@@ -1,0 +1,6 @@
+{
+  "name": "Gemini Nexus Max",
+  "description": "Autonomous Bengali AI Assistant with Real-Time Multimodal Vision, Live Voice, and Google Ecosystem Intelligence",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

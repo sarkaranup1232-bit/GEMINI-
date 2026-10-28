@@ -1,0 +1,82 @@
+name: Build & Direct Mobile Download APK
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Prepare Debug Keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+            echo "Decoded debug.keystore from base64."
+          elif [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v -keystore debug.keystore -alias androiddebugkey -keypass android -storepass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+            echo "Generated fallback debug.keystore."
+          fi
+
+      - name: Make Gradlew Executable
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Locate & Rename APK for Mobile
+        id: find_apk
+        run: |
+          RAW_APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$RAW_APK" ]; then
+            echo "ERROR: APK not found!"
+            exit 1
+          fi
+          echo "Found APK at: $RAW_APK"
+          cp "$RAW_APK" NexusMax.apk
+          echo "Copied to NexusMax.apk for direct 1-click mobile download."
+          echo "apk_path=NexusMax.apk" >> $GITHUB_OUTPUT
+
+      - name: Upload to GitHub Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexusMax-APK
+          path: NexusMax.apk
+          retention-days: 30
+
+      - name: Publish Direct 1-Click APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: latest
+          name: "👑 Nexus Max APK (মোবাইলে সরাসরি ডাউনলোডের জন্য)"
+          body: |
+            ### 📱 অ্যান্ড্রয়েড ফোনে সরাসরি ১-ক্লিকে ইনস্টল করুন:
+            নিচের Assets সেকশন থেকে **`NexusMax.apk`** ফাইলে সরাসরি ট্যাপ করুন। আনজিপ করার প্রয়োজন নেই, সরাসরি মোবাইলে ইনস্টল হয়ে যাবে।
+          files: NexusMax.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

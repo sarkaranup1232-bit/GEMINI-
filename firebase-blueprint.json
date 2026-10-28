@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "ChatSession": {
+      "title": "ChatSession",
+      "description": "Conversation thread metadata and history with Gemini Nexus Max",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the chat session"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner Google UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short descriptive topic of the conversation in Bengali/English"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Snippet of the most recent message"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when session was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when session was last updated"
+        }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual message in a conversation",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message"
+        },
+        "chatId": {
+          "type": "string",
+          "description": "Parent chat identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner Google UID"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "model", "system"],
+          "description": "Message author"
+        },
+        "content": {
+          "type": "string",
+          "description": "Text content of the message"
+        },
+        "modelUsed": {
+          "type": "string",
+          "description": "Gemini model identifier used for this response"
+        },
+        "hasAudio": {
+          "type": "boolean",
+          "description": "Whether voice TTS was synthesized"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when message was posted"
+        }
+      },
+      "required": ["id", "chatId", "userId", "role", "content"]
+    },
+    "GeneratedMedia": {
+      "title": "GeneratedMedia",
+      "description": "Images, music, or generated artifacts",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique media record ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner Google UID"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["image", "music", "video", "code"],
+          "description": "Category of generated asset"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Prompt used to generate media"
+        },
+        "aspectRatio": {
+          "type": "string",
+          "description": "Aspect ratio requested (e.g., 1:1, 16:9)"
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL or encoded asset representation"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of generation"
+        }
+      },
+      "required": ["id", "userId", "type", "prompt"]
+    },
+    "AutonomousTask": {
+      "title": "AutonomousTask",
+      "description": "Logs and status for autonomous system execution tasks",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner Google UID"
+        },
+        "actionType": {
+          "type": "string",
+          "description": "Action category: call, sms, map_route, sandbox, web_scrape"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable label of the action"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["completed", "executing", "queued", "failed"],
+          "description": "Execution status"
+        },
+        "details": {
+          "type": "string",
+          "description": "Result details or payload"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Execution timestamp"
+        }
+      },
+      "required": ["id", "userId", "actionType", "title", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatSession" },
+      "description": "User conversation sessions"
+    },
+    "/users/{userId}/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Chat messages in a thread"
+    },
+    "/users/{userId}/media/{mediaId}": {
+      "schema": { "$ref": "#/entities/GeneratedMedia" },
+      "description": "Generated images, videos, music clips"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/AutonomousTask" },
+      "description": "Autonomous macro actions execution logs"
+    }
+  }
+}
