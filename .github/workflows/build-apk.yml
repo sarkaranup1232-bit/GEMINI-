@@ -27,15 +27,23 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Prepare Debug Keystore
+      - name: Prepare Environment Files
         run: |
+          touch .env
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore
             echo "Decoded debug.keystore from base64."
-          elif [ ! -f debug.keystore ]; then
+          fi
+          if [ ! -f debug.keystore ]; then
             keytool -genkeypair -v -keystore debug.keystore -alias androiddebugkey -keypass android -storepass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
             echo "Generated fallback debug.keystore."
           fi
@@ -44,7 +52,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3072m -Dorg.gradle.parallel=false -Dfile.encoding=UTF-8"
+        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Locate & Rename APK for Mobile
         id: find_apk
@@ -56,7 +66,6 @@ jobs:
           fi
           echo "Found APK at: $RAW_APK"
           cp "$RAW_APK" NexusMax.apk
-          echo "Copied to NexusMax.apk for direct 1-click mobile download."
           echo "apk_path=NexusMax.apk" >> $GITHUB_OUTPUT
 
       - name: Upload to GitHub Actions Artifacts
